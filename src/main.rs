@@ -1,7 +1,10 @@
-use regex::{Captures, Regex};
-use std::io::{self, BufRead};
+use hex::decode;
+use std::{
+    io::{self, BufRead},
+    str,
+};
 
-const DEBUG_PREFIX: &str = "[debug] (&)";
+const DEBUG_PREFIX: &str = "[debug]";
 
 #[derive(Debug, Clone, PartialEq)]
 struct ParseError {
@@ -21,61 +24,54 @@ fn main() {
 }
 
 fn pprint(line: String) -> String {
-    let re = Regex::new(r"\[(\d+,\s)+\d+]").unwrap();
-    let result = re.replace(line.as_str(), |caps: &Captures| {
-        let s = caps.get(0).map_or("", |m| m.as_str());
-        parse_utf8_arr(s).unwrap_or(s.to_string())
-    });
-    format!("{}", result)
+    let hex_string = str::replace(&line, "[debug] ", "");
+    let result = parse_hex_string(&hex_string).unwrap_or(hex_string.to_string());
+    format!("[debug] {}", result)
 }
 
-fn parse_utf8_arr(s: &str) -> Result<String, ParseError> {
-    let s_arr: Vec<&str> = s[1..s.len() - 1].split(", ").collect();
-    let u8_arr = s_arr
-        .iter()
-        .filter_map(|ss| ss.parse().ok())
-        .collect::<Vec<u8>>();
-    if s_arr.len() > u8_arr.len() {
-        Err(ParseError {
-            msg: "not an u8 array".to_string(),
-        })
+fn parse_hex_string(s: &str) -> Result<String, ParseError> {
+    if s.starts_with("0x") {
+        let value = str::replace(s, "0x", "");
+        let decoded_string = decode(value);
+        match decoded_string {
+            Ok(buf) => Ok(String::from_utf8(buf).expect("found invalid utf8")),
+            Err(_ae) => Err(ParseError {
+                msg: "not a hex string".to_string(),
+            }),
+        }
     } else {
-        String::from_utf8(u8_arr).or(Err(ParseError {
-            msg: "u8 array => str nok".to_string(),
-        }))
+        Err(ParseError {
+            msg: "not a hex string".to_string(),
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_utf8_arr, pprint, ParseError};
+    use crate::{parse_hex_string, pprint, ParseError};
 
     #[test]
     fn pprint_ok() {
         assert_eq!(
-            pprint("[debug] (&) [97, 112, 116, 111, 115, 32, 100, 101, 98, 117, 103, 32, 109, 97, 100, 101, 32, 101, 97, 115, 121]".to_string()),
-            "[debug] (&) aptos debug made easy"
+            pprint("[debug] 0x6d6f7665206465627567206d6164652065617379".to_string()),
+            "[debug] move debug made easy"
         );
         assert_eq!(
-            pprint("[debug] (&) { [97, 112, 116, 111, 115, 32, 100, 101, 98, 117, 103, 32, 109, 97, 100, 101, 32, 101, 97, 115, 121] }".to_string()),
-            "[debug] (&) { aptos debug made easy }"
-        );
-        assert_eq!(
-            pprint("[debug] (&) [0, 300]".to_string()),
-            "[debug] (&) [0, 300]"
+            pprint("[debug] aaaaabbbbb".to_string()),
+            "[debug] aaaaabbbbb"
         );
     }
 
     #[test]
     fn parse_ok() {
         assert_eq!(
-            parse_utf8_arr("[97, 112, 116, 111, 115, 32, 100, 101, 98, 117, 103, 32, 109, 97, 100, 101, 32, 101, 97, 115, 121]"),
-            Ok("aptos debug made easy".to_string())
+            parse_hex_string("0x6d6f7665206465627567206d6164652065617379"),
+            Ok("move debug made easy".to_string())
         );
         assert_eq!(
-            parse_utf8_arr("[0, 300]"),
+            parse_hex_string("aaaaabbbbb"),
             Err(ParseError {
-                msg: "not an u8 array".to_string()
+                msg: "not a hex string".to_string()
             })
         );
     }

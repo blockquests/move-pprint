@@ -1,31 +1,29 @@
-# aptos pprint
+# move pprint
 
-<a href="https://crates.io/crates/aptos-pprint">
-    <img src="https://img.shields.io/crates/v/aptos-pprint.svg" alt="Version">
+<a href="https://crates.io/crates/move-pprint">
+    <img src="https://img.shields.io/crates/v/move-pprint.svg" alt="Version">
 </a>
 
-With `debug::print(&b"aptos debug made easy")` in code.
+With `debug::print(&b"move debug made easy")` in code.
 
 Before 🤯
 
 ```
-$ aptos move test
+$ move test
 ...
-[debug] (&) [97, 112, 116, 111, 115, 32, 100, 101, 98, 117, 103, 32, 109, 97, 100, 101, 32, 101, 97, 115, 121]
-[debug] (&) { [97, 112, 116, 111, 115, 32, 100, 101, 98, 117, 103, 32, 109, 97, 100, 101, 32, 101, 97, 115, 121] }
+[debug] 0x6d6f7665206465627567206d6164652065617379
 ```
 
 After 😇
 
 ```
-$ aptos move test | aptos-pprint
+$ move test | move-pprint
 ...
-[debug] (&) aptos debug made easy
-[debug] (&) { aptos debug made easy }
+[debug] move debug made easy
 ```
 
 ## Install
 
 ```
-cargo install aptos-pprint
+cargo install move-pprint
 ```
